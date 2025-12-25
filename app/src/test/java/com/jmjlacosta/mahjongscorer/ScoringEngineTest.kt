@@ -285,4 +285,177 @@ class ScoringEngineTest {
         val score = ScoringEngine.calculateScore(tiles)
         assertEquals(0, score.totalPoints)
     }
+
+    // =========================================================================
+    // All Chows Tests
+    // =========================================================================
+
+    @Test
+    fun `all chows scores correctly`() {
+        val tiles = listOf(
+            dots(1), dots(2), dots(3),
+            dots(4), dots(5), dots(6),
+            bamboo(2), bamboo(3), bamboo(4),
+            chars(5), chars(6), chars(7),
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        assertTrue(hasPattern(score, Pattern.ALL_CHOWS))
+        assertTrue(score.totalPoints >= 2) // Basic (1) + All Chows (1)
+    }
+
+    // =========================================================================
+    // Dragon Pung Tests
+    // =========================================================================
+
+    @Test
+    fun `dragon pung scores correctly`() {
+        val tiles = listOf(
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dots(1), dots(2), dots(3),
+            dots(4), dots(5), dots(6),
+            bamboo(2), bamboo(3), bamboo(4),
+            chars(5), chars(5)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        assertTrue(hasPattern(score, Pattern.DRAGON_PUNG))
+        assertTrue(score.totalPoints >= 2) // Basic (1) + Dragon Pung (1)
+    }
+
+    @Test
+    fun `multiple dragon pungs stack`() {
+        val tiles = listOf(
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN),
+            dots(1), dots(2), dots(3),
+            bamboo(4), bamboo(5), bamboo(6),
+            chars(5), chars(5)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        // Should have 2 dragon pungs
+        val dragonPungCount = score.items.count { it.pattern == Pattern.DRAGON_PUNG }
+        assertEquals(2, dragonPungCount)
+    }
+
+    // =========================================================================
+    // Wind Pung Tests
+    // =========================================================================
+
+    @Test
+    fun `seat wind pung scores correctly`() {
+        val tiles = listOf(
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            dots(1), dots(2), dots(3),
+            dots(4), dots(5), dots(6),
+            bamboo(2), bamboo(3), bamboo(4),
+            chars(5), chars(5)
+        )
+        val context = WinContext(seatWind = Tile.Wind.EAST)
+        val hand = Hand(tiles)
+        val score = ScoringEngine.calculateScore(hand, context)
+
+        assertTrue(hasPattern(score, Pattern.SEAT_WIND_PUNG))
+    }
+
+    @Test
+    fun `seat and round wind stack for double points`() {
+        val tiles = listOf(
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            dots(1), dots(2), dots(3),
+            dots(4), dots(5), dots(6),
+            bamboo(2), bamboo(3), bamboo(4),
+            chars(5), chars(5)
+        )
+        val context = WinContext(
+            seatWind = Tile.Wind.EAST,
+            roundWind = Tile.Wind.EAST
+        )
+        val hand = Hand(tiles)
+        val score = ScoringEngine.calculateScore(hand, context)
+
+        assertTrue(hasPattern(score, Pattern.SEAT_WIND_PUNG))
+        assertTrue(hasPattern(score, Pattern.ROUND_WIND_PUNG))
+    }
+
+    // =========================================================================
+    // Mixed Terminals Tests
+    // =========================================================================
+
+    @Test
+    fun `mixed terminals scores correctly`() {
+        val tiles = listOf(
+            dots(1), dots(1), dots(1),
+            dots(9), dots(9), dots(9),
+            bamboo(1), bamboo(1), bamboo(1),
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        assertTrue(hasPattern(score, Pattern.MIXED_TERMINALS))
+        assertTrue(score.totalPoints >= 7) // Basic (1) + Mixed Terminals (6)
+    }
+
+    // =========================================================================
+    // Little Three Dragons Tests
+    // =========================================================================
+
+    @Test
+    fun `little three dragons scores correctly`() {
+        val tiles = listOf(
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN),
+            dots(1), dots(2), dots(3),
+            bamboo(4), bamboo(5), bamboo(6),
+            dragon(Tile.Dragon.WHITE), dragon(Tile.Dragon.WHITE)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        assertTrue(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS))
+        assertTrue(score.totalPoints >= 7) // Basic (1) + Little Three Dragons (6)
+        // Also should have 2 dragon pungs
+        assertEquals(2, score.items.count { it.pattern == Pattern.DRAGON_PUNG })
+    }
+
+    // =========================================================================
+    // Big Three Dragons Tests
+    // =========================================================================
+
+    @Test
+    fun `big three dragons scores correctly`() {
+        val tiles = listOf(
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN),
+            dragon(Tile.Dragon.WHITE), dragon(Tile.Dragon.WHITE), dragon(Tile.Dragon.WHITE),
+            dots(1), dots(2), dots(3),
+            bamboo(5), bamboo(5)
+        )
+        val score = ScoringEngine.calculateScore(tiles)
+
+        assertTrue(hasPattern(score, Pattern.BIG_THREE_DRAGONS))
+        assertFalse(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS)) // Superseded
+        assertTrue(score.totalPoints >= 11) // Basic (1) + Big Three Dragons (10)
+        // Also should have 3 dragon pungs stacking
+        assertEquals(3, score.items.count { it.pattern == Pattern.DRAGON_PUNG })
+    }
+
+    @Test
+    fun `big three dragons full scoring`() {
+        // Big Three Dragons + 3 Dragon Pungs + All Chows excluded (has pungs)
+        val tiles = listOf(
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN),
+            dragon(Tile.Dragon.WHITE), dragon(Tile.Dragon.WHITE), dragon(Tile.Dragon.WHITE),
+            dots(1), dots(2), dots(3),
+            bamboo(5), bamboo(5)
+        )
+        val hand = Hand(tiles)
+        val score = ScoringEngine.calculateScore(hand, WinContext.SELF_DRAW)
+
+        // Basic (1) + Self Draw (1) + Concealed (1) + Big Three Dragons (10) + 3x Dragon Pung (3) = 16
+        assertTrue(score.totalPoints >= 16)
+    }
 }

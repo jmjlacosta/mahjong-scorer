@@ -319,4 +319,312 @@ class PatternDetectorTest {
         assertTrue(patterns.contains(Pattern.ALL_PONGS))
         assertTrue(patterns.contains(Pattern.PURE_HAND))
     }
+
+    // =========================================================================
+    // All Chows Tests
+    // =========================================================================
+
+    @Test
+    fun `all chows detected correctly`() {
+        val melds = listOf(
+            Meld.Chow(dots(1)),
+            Meld.Chow(dots(4)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(7)),
+            Meld.Pair(wind(Tile.Wind.EAST))
+        )
+        assertTrue(PatternDetector.isAllChows(melds))
+    }
+
+    @Test
+    fun `not all chows when pong present`() {
+        val melds = listOf(
+            Meld.Chow(dots(1)),
+            Meld.Pong(dots(5)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(7)),
+            Meld.Pair(wind(Tile.Wind.EAST))
+        )
+        assertFalse(PatternDetector.isAllChows(melds))
+    }
+
+    // =========================================================================
+    // Dragon Pung Tests
+    // =========================================================================
+
+    @Test
+    fun `count dragon pungs correctly`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(2)),
+            Meld.Pair(chars(5))
+        )
+        assertEquals(2, PatternDetector.countDragonPungs(melds))
+    }
+
+    @Test
+    fun `kong counts as dragon pung`() {
+        val melds = listOf(
+            Meld.Kong(dragon(Tile.Dragon.WHITE)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(5)),
+            Meld.Pair(wind(Tile.Wind.EAST))
+        )
+        assertEquals(1, PatternDetector.countDragonPungs(melds))
+    }
+
+    // =========================================================================
+    // Seat Wind Pung Tests
+    // =========================================================================
+
+    @Test
+    fun `seat wind pung detected`() {
+        val melds = listOf(
+            Meld.Pong(wind(Tile.Wind.EAST)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(5)),
+            Meld.Pair(dots(9))
+        )
+        assertTrue(PatternDetector.hasSeatWindPung(melds, Tile.Wind.EAST))
+        assertFalse(PatternDetector.hasSeatWindPung(melds, Tile.Wind.SOUTH))
+    }
+
+    @Test
+    fun `seat wind kong counts`() {
+        val melds = listOf(
+            Meld.Kong(wind(Tile.Wind.SOUTH)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(5)),
+            Meld.Pair(dots(9))
+        )
+        assertTrue(PatternDetector.hasSeatWindPung(melds, Tile.Wind.SOUTH))
+    }
+
+    // =========================================================================
+    // Round Wind Pung Tests
+    // =========================================================================
+
+    @Test
+    fun `round wind pung detected`() {
+        val melds = listOf(
+            Meld.Pong(wind(Tile.Wind.WEST)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(2)),
+            Meld.Chow(chars(5)),
+            Meld.Pair(dots(9))
+        )
+        assertTrue(PatternDetector.hasRoundWindPung(melds, Tile.Wind.WEST))
+        assertFalse(PatternDetector.hasRoundWindPung(melds, Tile.Wind.NORTH))
+    }
+
+    // =========================================================================
+    // Mixed Terminals Tests
+    // =========================================================================
+
+    @Test
+    fun `mixed terminals with terminals and honors`() {
+        val tiles = listOf(
+            dots(1), dots(1), dots(1),
+            dots(9), dots(9), dots(9),
+            bamboo(1), bamboo(1), bamboo(1),
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED)
+        )
+        assertTrue(PatternDetector.isMixedTerminals(tiles))
+    }
+
+    @Test
+    fun `not mixed terminals all terminals`() {
+        val tiles = listOf(
+            dots(1), dots(1), dots(1),
+            dots(9), dots(9), dots(9),
+            bamboo(1), bamboo(1), bamboo(1),
+            bamboo(9), bamboo(9), bamboo(9),
+            chars(1), chars(1)
+        )
+        assertFalse(PatternDetector.isMixedTerminals(tiles)) // This is All Terminals
+    }
+
+    @Test
+    fun `not mixed terminals all honors`() {
+        val tiles = listOf(
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            wind(Tile.Wind.SOUTH), wind(Tile.Wind.SOUTH), wind(Tile.Wind.SOUTH),
+            wind(Tile.Wind.WEST), wind(Tile.Wind.WEST), wind(Tile.Wind.WEST),
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN)
+        )
+        assertFalse(PatternDetector.isMixedTerminals(tiles)) // This is All Honors
+    }
+
+    @Test
+    fun `not mixed terminals with simple tiles`() {
+        val tiles = listOf(
+            dots(1), dots(1), dots(1),
+            dots(5), dots(5), dots(5), // Simple tile
+            wind(Tile.Wind.EAST), wind(Tile.Wind.EAST), wind(Tile.Wind.EAST),
+            dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED), dragon(Tile.Dragon.RED),
+            bamboo(9), bamboo(9)
+        )
+        assertFalse(PatternDetector.isMixedTerminals(tiles))
+    }
+
+    // =========================================================================
+    // Little Three Dragons Tests
+    // =========================================================================
+
+    @Test
+    fun `little three dragons detected`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Chow(dots(1)),
+            Meld.Chow(bamboo(4)),
+            Meld.Pair(dragon(Tile.Dragon.WHITE))
+        )
+        assertTrue(PatternDetector.isLittleThreeDragons(melds))
+    }
+
+    @Test
+    fun `not little three dragons without dragon pair`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Chow(dots(1)),
+            Meld.Chow(bamboo(4)),
+            Meld.Pair(wind(Tile.Wind.EAST)) // Not a dragon pair
+        )
+        assertFalse(PatternDetector.isLittleThreeDragons(melds))
+    }
+
+    @Test
+    fun `not little three dragons with only one dragon pung`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dots(5)),
+            Meld.Chow(dots(1)),
+            Meld.Chow(bamboo(4)),
+            Meld.Pair(dragon(Tile.Dragon.WHITE))
+        )
+        assertFalse(PatternDetector.isLittleThreeDragons(melds))
+    }
+
+    // =========================================================================
+    // Big Three Dragons Tests
+    // =========================================================================
+
+    @Test
+    fun `big three dragons detected`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dragon(Tile.Dragon.WHITE)),
+            Meld.Chow(dots(1)),
+            Meld.Pair(bamboo(5))
+        )
+        assertTrue(PatternDetector.isBigThreeDragons(melds))
+    }
+
+    @Test
+    fun `big three dragons with kong`() {
+        val melds = listOf(
+            Meld.Kong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dragon(Tile.Dragon.WHITE)),
+            Meld.Chow(dots(1)),
+            Meld.Pair(bamboo(5))
+        )
+        assertTrue(PatternDetector.isBigThreeDragons(melds))
+    }
+
+    @Test
+    fun `not big three dragons with only two dragon pungs`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dots(1)),
+            Meld.Chow(bamboo(4)),
+            Meld.Pair(dragon(Tile.Dragon.WHITE))
+        )
+        assertFalse(PatternDetector.isBigThreeDragons(melds))
+    }
+
+    // =========================================================================
+    // Pattern Detection Integration Tests
+    // =========================================================================
+
+    @Test
+    fun `big three dragons supersedes little three dragons`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dragon(Tile.Dragon.WHITE)),
+            Meld.Chow(dots(1)),
+            Meld.Pair(bamboo(5))
+        )
+        val hand = Hand(
+            tiles = repeat(dragon(Tile.Dragon.RED), 3) + repeat(dragon(Tile.Dragon.GREEN), 3) +
+                    repeat(dragon(Tile.Dragon.WHITE), 3) + listOf(dots(1), dots(2), dots(3)) +
+                    repeat(bamboo(5), 2),
+            melds = melds
+        )
+        val patterns = PatternDetector.detectPatterns(hand, WinContext.DEFAULT)
+
+        assertTrue(patterns.contains(Pattern.BIG_THREE_DRAGONS))
+        assertFalse(patterns.contains(Pattern.LITTLE_THREE_DRAGONS))
+    }
+
+    @Test
+    fun `seat and round wind stack when same`() {
+        val melds = listOf(
+            Meld.Pong(wind(Tile.Wind.EAST)),
+            Meld.Chow(dots(1)),
+            Meld.Chow(dots(4)),
+            Meld.Chow(bamboo(2)),
+            Meld.Pair(chars(5))
+        )
+        val hand = Hand(
+            tiles = repeat(wind(Tile.Wind.EAST), 3) +
+                    listOf(dots(1), dots(2), dots(3), dots(4), dots(5), dots(6)) +
+                    listOf(bamboo(2), bamboo(3), bamboo(4)) + repeat(chars(5), 2),
+            melds = melds
+        )
+        val context = WinContext(
+            seatWind = Tile.Wind.EAST,
+            roundWind = Tile.Wind.EAST
+        )
+        val patterns = PatternDetector.detectPatterns(hand, context)
+
+        assertTrue(patterns.contains(Pattern.SEAT_WIND_PUNG))
+        assertTrue(patterns.contains(Pattern.ROUND_WIND_PUNG))
+        // Should have both for +2 total
+        assertEquals(2, patterns.count { it == Pattern.SEAT_WIND_PUNG || it == Pattern.ROUND_WIND_PUNG })
+    }
+
+    @Test
+    fun `dragon pungs stack with big three dragons`() {
+        val melds = listOf(
+            Meld.Pong(dragon(Tile.Dragon.RED)),
+            Meld.Pong(dragon(Tile.Dragon.GREEN)),
+            Meld.Pong(dragon(Tile.Dragon.WHITE)),
+            Meld.Chow(dots(1)),
+            Meld.Pair(bamboo(5))
+        )
+        val hand = Hand(
+            tiles = repeat(dragon(Tile.Dragon.RED), 3) + repeat(dragon(Tile.Dragon.GREEN), 3) +
+                    repeat(dragon(Tile.Dragon.WHITE), 3) + listOf(dots(1), dots(2), dots(3)) +
+                    repeat(bamboo(5), 2),
+            melds = melds
+        )
+        val patterns = PatternDetector.detectPatterns(hand, WinContext.DEFAULT)
+
+        assertTrue(patterns.contains(Pattern.BIG_THREE_DRAGONS))
+        // Should have 3 dragon pungs
+        assertEquals(3, patterns.count { it == Pattern.DRAGON_PUNG })
+    }
 }
