@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Mahjong tile colors -->
+    <color name="tile_dots">#1976D2</color>
+    <color name="tile_bamboo">#388E3C</color>
+    <color name="tile_characters">#D32F2F</color>
+    <color name="tile_wind">#455A64</color>
+    <color name="tile_dragon_red">#C62828</color>
+    <color name="tile_dragon_green">#2E7D32</color>
+    <color name="tile_dragon_white">#ECEFF1</color>
+</resources>
