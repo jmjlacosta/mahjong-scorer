@@ -1,12 +1,12 @@
 package com.jmjlacosta.mahjongscorer
 
+import com.google.common.truth.Truth.assertThat
 import com.jmjlacosta.mahjongscorer.model.Hand
 import com.jmjlacosta.mahjongscorer.model.HandParser
 import com.jmjlacosta.mahjongscorer.model.Meld
 import com.jmjlacosta.mahjongscorer.model.Suit
 import com.jmjlacosta.mahjongscorer.model.Tile
-import org.junit.Assert.*
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class HandTest {
 
@@ -32,8 +32,8 @@ class HandTest {
         val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
         val hand = Hand(tiles)
-        assertTrue(hand.isComplete)
-        assertEquals(14, hand.tileCount)
+        assertThat(hand.isComplete).isTrue()
+        assertThat(hand.tileCount).isEqualTo(14)
     }
 
     @Test
@@ -41,16 +41,16 @@ class HandTest {
         val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 1)
         val hand = Hand(tiles)
-        assertFalse(hand.isComplete)
+        assertThat(hand.isComplete).isFalse()
     }
 
     @Test
     fun `tile counts are calculated correctly`() {
         val tiles = repeat(dots(1), 3) + repeat(dots(2), 2) + repeat(wind(Tile.Wind.EAST), 4)
         val hand = Hand(tiles)
-        assertEquals(3, hand.tileCounts["DOTS_1"])
-        assertEquals(2, hand.tileCounts["DOTS_2"])
-        assertEquals(4, hand.tileCounts["WIND_EAST"])
+        assertThat(hand.tileCounts["DOTS_1"]).isEqualTo(3)
+        assertThat(hand.tileCounts["DOTS_2"]).isEqualTo(2)
+        assertThat(hand.tileCounts["WIND_EAST"]).isEqualTo(4)
     }
 
     // =========================================================================
@@ -64,14 +64,14 @@ class HandTest {
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isNotEmpty())
+        assertThat(results).isNotEmpty()
         val melds = results.first()
-        assertEquals(5, melds.size) // 4 pongs + 1 pair
+        assertThat(melds).hasSize(5) // 4 pongs + 1 pair
 
         val pongs = melds.filterIsInstance<Meld.Pong>()
         val pairs = melds.filterIsInstance<Meld.Pair>()
-        assertEquals(4, pongs.size)
-        assertEquals(1, pairs.size)
+        assertThat(pongs).hasSize(4)
+        assertThat(pairs).hasSize(1)
     }
 
     @Test
@@ -86,14 +86,14 @@ class HandTest {
         )
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isNotEmpty())
+        assertThat(results).isNotEmpty()
         val melds = results.first()
-        assertEquals(5, melds.size)
+        assertThat(melds).hasSize(5)
 
         val chows = melds.filterIsInstance<Meld.Chow>()
         val pairs = melds.filterIsInstance<Meld.Pair>()
-        assertTrue(chows.size >= 2) // At least some chows
-        assertEquals(1, pairs.size)
+        assertThat(chows.size).isAtLeast(2) // At least some chows
+        assertThat(pairs).hasSize(1)
     }
 
     @Test
@@ -108,8 +108,8 @@ class HandTest {
         )
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isNotEmpty())
-        assertTrue(HandParser.isValidWinningHand(tiles))
+        assertThat(results).isNotEmpty()
+        assertThat(HandParser.isValidWinningHand(tiles)).isTrue()
     }
 
     @Test
@@ -124,7 +124,7 @@ class HandTest {
         )
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isNotEmpty())
+        assertThat(results).isNotEmpty()
     }
 
     @Test
@@ -133,8 +133,8 @@ class HandTest {
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 1)
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isEmpty())
-        assertFalse(HandParser.isValidWinningHand(tiles))
+        assertThat(results).isEmpty()
+        assertThat(HandParser.isValidWinningHand(tiles)).isFalse()
     }
 
     @Test
@@ -147,7 +147,7 @@ class HandTest {
         )
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isEmpty())
+        assertThat(results).isEmpty()
     }
 
     // =========================================================================
@@ -168,12 +168,12 @@ class HandTest {
         )
         val results = HandParser.parseHand(tiles)
 
-        assertTrue(results.isNotEmpty())
-        assertTrue(HandParser.isSevenPairs(tiles))
+        assertThat(results).isNotEmpty()
+        assertThat(HandParser.isSevenPairs(tiles)).isTrue()
 
         val melds = results.first()
-        assertEquals(7, melds.size)
-        assertTrue(melds.all { it is Meld.Pair })
+        assertThat(melds).hasSize(7)
+        assertThat(melds.all { it is Meld.Pair }).isTrue()
     }
 
     @Test
@@ -188,7 +188,7 @@ class HandTest {
             dragon(Tile.Dragon.GREEN), dragon(Tile.Dragon.GREEN)
         )
 
-        assertTrue(HandParser.isSevenPairs(tiles))
+        assertThat(HandParser.isSevenPairs(tiles)).isTrue()
     }
 
     @Test
@@ -203,7 +203,7 @@ class HandTest {
             dots(6), dots(6)
         )
 
-        assertFalse(HandParser.isSevenPairs(tiles))
+        assertThat(HandParser.isSevenPairs(tiles)).isFalse()
     }
 
     // =========================================================================
@@ -226,8 +226,8 @@ class HandTest {
             dragon(Tile.Dragon.WHITE)
         )
 
-        assertTrue(HandParser.isThirteenOrphans(tiles))
-        assertTrue(HandParser.isValidWinningHand(tiles))
+        assertThat(HandParser.isThirteenOrphans(tiles)).isTrue()
+        assertThat(HandParser.isValidWinningHand(tiles)).isTrue()
     }
 
     @Test
@@ -246,7 +246,7 @@ class HandTest {
             dragon(Tile.Dragon.WHITE)
         )
 
-        assertTrue(HandParser.isThirteenOrphans(tiles))
+        assertThat(HandParser.isThirteenOrphans(tiles)).isTrue()
     }
 
     @Test
@@ -265,7 +265,7 @@ class HandTest {
             dragon(Tile.Dragon.WHITE)
         )
 
-        assertFalse(HandParser.isThirteenOrphans(tiles))
+        assertThat(HandParser.isThirteenOrphans(tiles)).isFalse()
     }
 
     // =========================================================================
@@ -285,6 +285,6 @@ class HandTest {
         val results = HandParser.parseHand(tiles)
 
         // Should find at least one valid interpretation
-        assertTrue(results.isNotEmpty())
+        assertThat(results).isNotEmpty()
     }
 }

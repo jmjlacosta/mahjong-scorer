@@ -1,10 +1,11 @@
 package com.jmjlacosta.mahjongscorer
 
+import com.google.common.truth.Truth.assertThat
 import com.jmjlacosta.mahjongscorer.model.Meld
 import com.jmjlacosta.mahjongscorer.model.Suit
 import com.jmjlacosta.mahjongscorer.model.Tile
-import org.junit.Assert.*
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class MeldTest {
 
@@ -15,20 +16,20 @@ class MeldTest {
     @Test
     fun `pong has 3 tiles`() {
         val pong = Meld.Pong(Tile.NumberedTile(Suit.DOTS, 5))
-        assertEquals(3, pong.size)
+        assertThat(pong.size).isEqualTo(3)
     }
 
     @Test
     fun `pong chinese name is correct`() {
         val pong = Meld.Pong(Tile.WindTile(Tile.Wind.EAST))
-        assertEquals("碰", pong.chineseName)
+        assertThat(pong.chineseName).isEqualTo("碰")
     }
 
     @Test
     fun `pong tiles are identical`() {
         val tile = Tile.DragonTile(Tile.Dragon.RED)
         val pong = Meld.Pong(tile)
-        assertTrue(pong.tiles.all { it == tile })
+        assertThat(pong.tiles).containsExactly(tile, tile, tile)
     }
 
     // =========================================================================
@@ -38,26 +39,26 @@ class MeldTest {
     @Test
     fun `kong has 4 tiles`() {
         val kong = Meld.Kong(Tile.NumberedTile(Suit.BAMBOO, 7))
-        assertEquals(4, kong.size)
+        assertThat(kong.size).isEqualTo(4)
     }
 
     @Test
     fun `exposed kong chinese name is correct`() {
         val kong = Meld.Kong(Tile.NumberedTile(Suit.BAMBOO, 7), isConcealed = false)
-        assertEquals("明杠", kong.chineseName)
+        assertThat(kong.chineseName).isEqualTo("明杠")
     }
 
     @Test
     fun `concealed kong chinese name is correct`() {
         val kong = Meld.Kong(Tile.NumberedTile(Suit.BAMBOO, 7), isConcealed = true)
-        assertEquals("暗杠", kong.chineseName)
+        assertThat(kong.chineseName).isEqualTo("暗杠")
     }
 
     @Test
     fun `kong tiles are identical`() {
         val tile = Tile.WindTile(Tile.Wind.NORTH)
         val kong = Meld.Kong(tile)
-        assertTrue(kong.tiles.all { it == tile })
+        assertThat(kong.tiles).containsExactly(tile, tile, tile, tile)
     }
 
     // =========================================================================
@@ -67,41 +68,45 @@ class MeldTest {
     @Test
     fun `chow has 3 tiles`() {
         val chow = Meld.Chow(Tile.NumberedTile(Suit.CHARACTERS, 2))
-        assertEquals(3, chow.size)
+        assertThat(chow.size).isEqualTo(3)
     }
 
     @Test
     fun `chow chinese name is correct`() {
         val chow = Meld.Chow(Tile.NumberedTile(Suit.CHARACTERS, 2))
-        assertEquals("吃", chow.chineseName)
+        assertThat(chow.chineseName).isEqualTo("吃")
     }
 
     @Test
     fun `chow tiles are consecutive`() {
         val chow = Meld.Chow(Tile.NumberedTile(Suit.DOTS, 3))
-        assertEquals(listOf(3, 4, 5), chow.numbers)
+        assertThat(chow.numbers).containsExactly(3, 4, 5).inOrder()
     }
 
     @Test
     fun `chow tiles are same suit`() {
         val chow = Meld.Chow(Tile.NumberedTile(Suit.BAMBOO, 5))
-        assertTrue(chow.tiles.all { (it as Tile.NumberedTile).suit == Suit.BAMBOO })
+        assertThat(chow.tiles.all { (it as Tile.NumberedTile).suit == Suit.BAMBOO }).isTrue()
     }
 
     @Test
     fun `chow starting at 7 is valid`() {
         val chow = Meld.Chow(Tile.NumberedTile(Suit.DOTS, 7))
-        assertEquals(listOf(7, 8, 9), chow.numbers)
+        assertThat(chow.numbers).containsExactly(7, 8, 9).inOrder()
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `chow starting at 8 throws exception`() {
-        Meld.Chow(Tile.NumberedTile(Suit.DOTS, 8))
+        assertThrows<IllegalArgumentException> {
+            Meld.Chow(Tile.NumberedTile(Suit.DOTS, 8))
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `chow starting at 9 throws exception`() {
-        Meld.Chow(Tile.NumberedTile(Suit.CHARACTERS, 9))
+        assertThrows<IllegalArgumentException> {
+            Meld.Chow(Tile.NumberedTile(Suit.CHARACTERS, 9))
+        }
     }
 
     // =========================================================================
@@ -111,20 +116,20 @@ class MeldTest {
     @Test
     fun `pair has 2 tiles`() {
         val pair = Meld.Pair(Tile.DragonTile(Tile.Dragon.WHITE))
-        assertEquals(2, pair.size)
+        assertThat(pair.size).isEqualTo(2)
     }
 
     @Test
     fun `pair chinese name is correct`() {
         val pair = Meld.Pair(Tile.DragonTile(Tile.Dragon.WHITE))
-        assertEquals("对", pair.chineseName)
+        assertThat(pair.chineseName).isEqualTo("对")
     }
 
     @Test
     fun `pair tiles are identical`() {
         val tile = Tile.NumberedTile(Suit.CHARACTERS, 9)
         val pair = Meld.Pair(tile)
-        assertTrue(pair.tiles.all { it == tile })
+        assertThat(pair.tiles).containsExactly(tile, tile)
     }
 
     // =========================================================================
@@ -135,8 +140,8 @@ class MeldTest {
     fun `tryPong returns pong for identical tiles`() {
         val tile = Tile.NumberedTile(Suit.DOTS, 5)
         val pong = Meld.tryPong(tile, tile, tile)
-        assertNotNull(pong)
-        assertEquals(tile, pong?.tile)
+        assertThat(pong).isNotNull()
+        assertThat(pong?.tile).isEqualTo(tile)
     }
 
     @Test
@@ -144,15 +149,15 @@ class MeldTest {
         val t1 = Tile.NumberedTile(Suit.DOTS, 5)
         val t2 = Tile.NumberedTile(Suit.DOTS, 6)
         val pong = Meld.tryPong(t1, t1, t2)
-        assertNull(pong)
+        assertThat(pong).isNull()
     }
 
     @Test
     fun `tryKong returns kong for identical tiles`() {
         val tile = Tile.WindTile(Tile.Wind.SOUTH)
         val kong = Meld.tryKong(tile, tile, tile, tile)
-        assertNotNull(kong)
-        assertEquals(tile, kong?.tile)
+        assertThat(kong).isNotNull()
+        assertThat(kong?.tile).isEqualTo(tile)
     }
 
     @Test
@@ -160,7 +165,7 @@ class MeldTest {
         val t1 = Tile.WindTile(Tile.Wind.SOUTH)
         val t2 = Tile.WindTile(Tile.Wind.NORTH)
         val kong = Meld.tryKong(t1, t1, t1, t2)
-        assertNull(kong)
+        assertThat(kong).isNull()
     }
 
     @Test
@@ -169,8 +174,8 @@ class MeldTest {
         val t2 = Tile.NumberedTile(Suit.BAMBOO, 4)
         val t3 = Tile.NumberedTile(Suit.BAMBOO, 5)
         val chow = Meld.tryChow(t1, t2, t3)
-        assertNotNull(chow)
-        assertEquals(t1, chow?.startTile)
+        assertThat(chow).isNotNull()
+        assertThat(chow?.startTile).isEqualTo(t1)
     }
 
     @Test
@@ -179,8 +184,8 @@ class MeldTest {
         val t2 = Tile.NumberedTile(Suit.DOTS, 9)
         val t3 = Tile.NumberedTile(Suit.DOTS, 8)
         val chow = Meld.tryChow(t1, t2, t3)
-        assertNotNull(chow)
-        assertEquals(7, chow?.startTile?.number)
+        assertThat(chow).isNotNull()
+        assertThat(chow?.startTile?.number).isEqualTo(7)
     }
 
     @Test
@@ -189,7 +194,7 @@ class MeldTest {
         val t2 = Tile.NumberedTile(Suit.BAMBOO, 4)
         val t3 = Tile.NumberedTile(Suit.BAMBOO, 6)
         val chow = Meld.tryChow(t1, t2, t3)
-        assertNull(chow)
+        assertThat(chow).isNull()
     }
 
     @Test
@@ -198,7 +203,7 @@ class MeldTest {
         val t2 = Tile.NumberedTile(Suit.DOTS, 4)
         val t3 = Tile.NumberedTile(Suit.BAMBOO, 5)
         val chow = Meld.tryChow(t1, t2, t3)
-        assertNull(chow)
+        assertThat(chow).isNull()
     }
 
     @Test
@@ -207,15 +212,15 @@ class MeldTest {
         val t2 = Tile.WindTile(Tile.Wind.SOUTH)
         val t3 = Tile.WindTile(Tile.Wind.WEST)
         val chow = Meld.tryChow(t1, t2, t3)
-        assertNull(chow)
+        assertThat(chow).isNull()
     }
 
     @Test
     fun `tryPair returns pair for identical tiles`() {
         val tile = Tile.DragonTile(Tile.Dragon.GREEN)
         val pair = Meld.tryPair(tile, tile)
-        assertNotNull(pair)
-        assertEquals(tile, pair?.tile)
+        assertThat(pair).isNotNull()
+        assertThat(pair?.tile).isEqualTo(tile)
     }
 
     @Test
@@ -223,6 +228,6 @@ class MeldTest {
         val t1 = Tile.DragonTile(Tile.Dragon.GREEN)
         val t2 = Tile.DragonTile(Tile.Dragon.RED)
         val pair = Meld.tryPair(t1, t2)
-        assertNull(pair)
+        assertThat(pair).isNull()
     }
 }

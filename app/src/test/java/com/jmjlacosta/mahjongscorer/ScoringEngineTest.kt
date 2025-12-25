@@ -1,5 +1,6 @@
 package com.jmjlacosta.mahjongscorer
 
+import com.google.common.truth.Truth.assertThat
 import com.jmjlacosta.mahjongscorer.model.Hand
 import com.jmjlacosta.mahjongscorer.model.Suit
 import com.jmjlacosta.mahjongscorer.model.Tile
@@ -7,8 +8,11 @@ import com.jmjlacosta.mahjongscorer.scoring.Pattern
 import com.jmjlacosta.mahjongscorer.scoring.Score
 import com.jmjlacosta.mahjongscorer.scoring.ScoringEngine
 import com.jmjlacosta.mahjongscorer.scoring.WinContext
-import org.junit.Assert.*
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 
 class ScoringEngineTest {
 
@@ -28,11 +32,100 @@ class ScoringEngineTest {
     }
 
     // =========================================================================
+    // Parameterized Tests - Score Calculations
+    // =========================================================================
+
+    companion object {
+        private fun dots(n: Int) = Tile.NumberedTile(Suit.DOTS, n)
+        private fun bamboo(n: Int) = Tile.NumberedTile(Suit.BAMBOO, n)
+        private fun chars(n: Int) = Tile.NumberedTile(Suit.CHARACTERS, n)
+        private fun wind(w: Tile.Wind) = Tile.WindTile(w)
+        private fun dragon(d: Tile.Dragon) = Tile.DragonTile(d)
+        private fun repeat(tile: Tile, n: Int): List<Tile> = List(n) { tile }
+
+        @JvmStatic
+        fun scoringCases(): Stream<Arguments> = Stream.of(
+            // Basic win + concealed
+            Arguments.of(
+                listOf(
+                    dots(1), dots(2), dots(3),
+                    dots(4), dots(5), dots(6),
+                    bamboo(2), bamboo(3), bamboo(4),
+                    chars(5), chars(6), chars(7),
+                    wind(Tile.Wind.EAST), wind(Tile.Wind.EAST)
+                ),
+                WinContext.DEFAULT,
+                3, // Basic (1) + All Chows (1) + Concealed (1)
+                "All chows + concealed"
+            ),
+            // Pure hand + all pongs + concealed
+            Arguments.of(
+                repeat(dots(1), 3) + repeat(dots(2), 3) +
+                        repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2),
+                WinContext.DEFAULT,
+                10, // Basic (1) + All Pongs (2) + Pure Hand (6) + Concealed (1)
+                "Pure hand + all pongs + concealed"
+            ),
+            // Pure hand + all pongs + self draw + concealed
+            Arguments.of(
+                repeat(dots(1), 3) + repeat(dots(2), 3) +
+                        repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2),
+                WinContext.SELF_DRAW,
+                11, // Basic (1) + Self Draw (1) + Concealed (1) + All Pongs (2) + Pure Hand (6)
+                "Pure hand + all pongs + self draw"
+            ),
+            // Seven pairs + pure hand
+            Arguments.of(
+                listOf(
+                    dots(1), dots(1), dots(2), dots(2), dots(3), dots(3), dots(4), dots(4),
+                    dots(5), dots(5), dots(6), dots(6), dots(7), dots(7)
+                ),
+                WinContext.DEFAULT,
+                12, // Basic (1) + Seven Pairs (4) + Pure Hand (6) + Concealed (1)
+                "Seven pairs + pure hand"
+            )
+        )
+
+        @JvmStatic
+        fun invalidHandCases(): Stream<Arguments> = Stream.of(
+            Arguments.of(emptyList<Tile>(), "Empty hand"),
+            Arguments.of(
+                repeat(dots(1), 3) + repeat(dots(2), 3) +
+                        repeat(dots(3), 3) + repeat(dots(4), 3) + dots(5),
+                "13 tiles"
+            ),
+            Arguments.of(
+                listOf(
+                    dots(1), dots(3), dots(5), dots(7), dots(9),
+                    bamboo(2), bamboo(4), bamboo(6), bamboo(8),
+                    chars(1), chars(3), chars(5), chars(7), chars(9)
+                ),
+                "Invalid melds"
+            )
+        )
+    }
+
+    @ParameterizedTest(name = "{3}: {2} points")
+    @MethodSource("scoringCases")
+    fun `scoring calculations`(tiles: List<Tile>, context: WinContext, expectedPoints: Int, description: String) {
+        val hand = Hand(tiles)
+        val score = ScoringEngine.calculateScore(hand, context)
+        assertThat(score.totalPoints).isEqualTo(expectedPoints)
+    }
+
+    @ParameterizedTest(name = "Invalid: {1}")
+    @MethodSource("invalidHandCases")
+    fun `invalid hands score zero`(tiles: List<Tile>, description: String) {
+        val score = ScoringEngine.calculateScore(tiles)
+        assertThat(score.totalPoints).isEqualTo(0)
+    }
+
+    // =========================================================================
     // Basic Win Tests
     // =========================================================================
 
     @Test
-    fun `basic win scores 1 point`() {
+    fun `basic win scores at least 1 point`() {
         val tiles = listOf(
             dots(1), dots(2), dots(3),
             dots(4), dots(5), dots(6),
@@ -42,20 +135,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.BASIC_WIN))
-        assertTrue(score.totalPoints >= 1)
-    }
-
-    @Test
-    fun `invalid hand scores zero`() {
-        val tiles = listOf(
-            dots(1), dots(3), dots(5), dots(7), dots(9),
-            bamboo(2), bamboo(4), bamboo(6), bamboo(8),
-            chars(1), chars(3), chars(5), chars(7), chars(9)
-        )
-        val score = ScoringEngine.calculateScore(tiles)
-
-        assertEquals(0, score.totalPoints)
+        assertThat(hasPattern(score, Pattern.BASIC_WIN)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(1)
     }
 
     // =========================================================================
@@ -74,8 +155,8 @@ class ScoringEngineTest {
         val basicScore = ScoringEngine.calculateScore(tiles)
         val selfDrawScore = ScoringEngine.calculateScoreSelfDraw(tiles)
 
-        assertTrue(hasPattern(selfDrawScore, Pattern.SELF_DRAW))
-        assertEquals(basicScore.totalPoints + 1, selfDrawScore.totalPoints)
+        assertThat(hasPattern(selfDrawScore, Pattern.SELF_DRAW)).isTrue()
+        assertThat(selfDrawScore.totalPoints).isEqualTo(basicScore.totalPoints + 1)
     }
 
     // =========================================================================
@@ -89,8 +170,8 @@ class ScoringEngineTest {
                 repeat(dragon(Tile.Dragon.RED), 2)
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.ALL_PONGS))
-        assertTrue(score.totalPoints >= 3) // Basic (1) + All Pongs (2)
+        assertThat(hasPattern(score, Pattern.ALL_PONGS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(3) // Basic (1) + All Pongs (2)
     }
 
     // =========================================================================
@@ -98,16 +179,15 @@ class ScoringEngineTest {
     // =========================================================================
 
     @Test
-    fun `pure hand all dots scores 7 points`() {
+    fun `pure hand all dots scores correctly`() {
         val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
         val hand = Hand(tiles)
         val score = ScoringEngine.calculateScore(hand, WinContext.DEFAULT)
 
-        assertTrue(hasPattern(score, Pattern.PURE_HAND))
-        assertTrue(hasPattern(score, Pattern.ALL_PONGS))
-        // Basic (1) + All Pongs (2) + Pure Hand (6) + Concealed (1) = 10
-        assertTrue(score.totalPoints >= 7)
+        assertThat(hasPattern(score, Pattern.PURE_HAND)).isTrue()
+        assertThat(hasPattern(score, Pattern.ALL_PONGS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(7)
     }
 
     @Test
@@ -117,8 +197,8 @@ class ScoringEngineTest {
         val hand = Hand(tiles)
         val score = ScoringEngine.calculateScore(hand, WinContext.DEFAULT)
 
-        assertTrue(hasPattern(score, Pattern.PURE_HAND))
-        assertFalse(hasPattern(score, Pattern.HALF_FLUSH))
+        assertThat(hasPattern(score, Pattern.PURE_HAND)).isTrue()
+        assertThat(hasPattern(score, Pattern.HALF_FLUSH)).isFalse()
     }
 
     // =========================================================================
@@ -136,8 +216,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.HALF_FLUSH))
-        assertTrue(score.totalPoints >= 4) // Basic (1) + Half Flush (3)
+        assertThat(hasPattern(score, Pattern.HALF_FLUSH)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(4) // Basic (1) + Half Flush (3)
     }
 
     // =========================================================================
@@ -155,8 +235,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.ALL_HONORS))
-        assertTrue(score.totalPoints >= 9) // Basic (1) + All Honors (8)
+        assertThat(hasPattern(score, Pattern.ALL_HONORS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(9) // Basic (1) + All Honors (8)
     }
 
     // =========================================================================
@@ -174,8 +254,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.ALL_TERMINALS))
-        assertTrue(score.totalPoints >= 9) // Basic (1) + All Terminals (8)
+        assertThat(hasPattern(score, Pattern.ALL_TERMINALS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(9) // Basic (1) + All Terminals (8)
     }
 
     // =========================================================================
@@ -195,9 +275,9 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.SEVEN_PAIRS))
-        assertTrue(hasPattern(score, Pattern.PURE_HAND)) // Also pure hand
-        assertTrue(score.totalPoints >= 5) // Basic (1) + Seven Pairs (4)
+        assertThat(hasPattern(score, Pattern.SEVEN_PAIRS)).isTrue()
+        assertThat(hasPattern(score, Pattern.PURE_HAND)).isTrue() // Also pure hand
+        assertThat(score.totalPoints).isAtLeast(5) // Basic (1) + Seven Pairs (4)
     }
 
     // =========================================================================
@@ -220,8 +300,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.THIRTEEN_ORPHANS))
-        assertTrue(score.totalPoints >= 14) // Basic (1) + Thirteen Orphans (13)
+        assertThat(hasPattern(score, Pattern.THIRTEEN_ORPHANS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(14) // Basic (1) + Thirteen Orphans (13)
     }
 
     // =========================================================================
@@ -234,8 +314,8 @@ class ScoringEngineTest {
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(score.chineseSummary.contains("胡")) // Basic win
-        assertTrue(score.chineseBreakdown.contains("总分"))
+        assertThat(score.chineseSummary).contains("胡") // Basic win
+        assertThat(score.chineseBreakdown).contains("总分")
     }
 
     @Test
@@ -244,8 +324,8 @@ class ScoringEngineTest {
                 repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(score.englishSummary.contains("Basic Win"))
-        assertTrue(score.englishBreakdown.contains("Total"))
+        assertThat(score.englishSummary).contains("Basic Win")
+        assertThat(score.englishBreakdown).contains("Total")
     }
 
     // =========================================================================
@@ -260,30 +340,12 @@ class ScoringEngineTest {
         val hand = Hand(tiles)
         val score = ScoringEngine.calculateScore(hand, WinContext.SELF_DRAW)
 
-        assertTrue(hasPattern(score, Pattern.BASIC_WIN))      // +1
-        assertTrue(hasPattern(score, Pattern.SELF_DRAW))      // +1
-        assertTrue(hasPattern(score, Pattern.CONCEALED_HAND)) // +1
-        assertTrue(hasPattern(score, Pattern.ALL_PONGS))      // +2
-        assertTrue(hasPattern(score, Pattern.PURE_HAND))      // +6
-        assertEquals(11, score.totalPoints)
-    }
-
-    // =========================================================================
-    // Edge Cases
-    // =========================================================================
-
-    @Test
-    fun `empty tiles returns zero score`() {
-        val score = ScoringEngine.calculateScore(emptyList())
-        assertEquals(0, score.totalPoints)
-    }
-
-    @Test
-    fun `13 tiles returns zero score`() {
-        val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
-                repeat(dots(3), 3) + repeat(dots(4), 3) + dots(5)
-        val score = ScoringEngine.calculateScore(tiles)
-        assertEquals(0, score.totalPoints)
+        assertThat(hasPattern(score, Pattern.BASIC_WIN)).isTrue()      // +1
+        assertThat(hasPattern(score, Pattern.SELF_DRAW)).isTrue()      // +1
+        assertThat(hasPattern(score, Pattern.CONCEALED_HAND)).isTrue() // +1
+        assertThat(hasPattern(score, Pattern.ALL_PONGS)).isTrue()      // +2
+        assertThat(hasPattern(score, Pattern.PURE_HAND)).isTrue()      // +6
+        assertThat(score.totalPoints).isEqualTo(11)
     }
 
     // =========================================================================
@@ -301,8 +363,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.ALL_CHOWS))
-        assertTrue(score.totalPoints >= 2) // Basic (1) + All Chows (1)
+        assertThat(hasPattern(score, Pattern.ALL_CHOWS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(2) // Basic (1) + All Chows (1)
     }
 
     // =========================================================================
@@ -320,8 +382,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.DRAGON_PUNG))
-        assertTrue(score.totalPoints >= 2) // Basic (1) + Dragon Pung (1)
+        assertThat(hasPattern(score, Pattern.DRAGON_PUNG)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(2) // Basic (1) + Dragon Pung (1)
     }
 
     @Test
@@ -337,7 +399,7 @@ class ScoringEngineTest {
 
         // Should have 2 dragon pungs
         val dragonPungCount = score.items.count { it.pattern == Pattern.DRAGON_PUNG }
-        assertEquals(2, dragonPungCount)
+        assertThat(dragonPungCount).isEqualTo(2)
     }
 
     // =========================================================================
@@ -357,7 +419,7 @@ class ScoringEngineTest {
         val hand = Hand(tiles)
         val score = ScoringEngine.calculateScore(hand, context)
 
-        assertTrue(hasPattern(score, Pattern.SEAT_WIND_PUNG))
+        assertThat(hasPattern(score, Pattern.SEAT_WIND_PUNG)).isTrue()
     }
 
     @Test
@@ -376,8 +438,8 @@ class ScoringEngineTest {
         val hand = Hand(tiles)
         val score = ScoringEngine.calculateScore(hand, context)
 
-        assertTrue(hasPattern(score, Pattern.SEAT_WIND_PUNG))
-        assertTrue(hasPattern(score, Pattern.ROUND_WIND_PUNG))
+        assertThat(hasPattern(score, Pattern.SEAT_WIND_PUNG)).isTrue()
+        assertThat(hasPattern(score, Pattern.ROUND_WIND_PUNG)).isTrue()
     }
 
     // =========================================================================
@@ -395,8 +457,8 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.MIXED_TERMINALS))
-        assertTrue(score.totalPoints >= 7) // Basic (1) + Mixed Terminals (6)
+        assertThat(hasPattern(score, Pattern.MIXED_TERMINALS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(7) // Basic (1) + Mixed Terminals (6)
     }
 
     // =========================================================================
@@ -414,10 +476,10 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS))
-        assertTrue(score.totalPoints >= 7) // Basic (1) + Little Three Dragons (6)
+        assertThat(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS)).isTrue()
+        assertThat(score.totalPoints).isAtLeast(7) // Basic (1) + Little Three Dragons (6)
         // Also should have 2 dragon pungs
-        assertEquals(2, score.items.count { it.pattern == Pattern.DRAGON_PUNG })
+        assertThat(score.items.count { it.pattern == Pattern.DRAGON_PUNG }).isEqualTo(2)
     }
 
     // =========================================================================
@@ -435,11 +497,11 @@ class ScoringEngineTest {
         )
         val score = ScoringEngine.calculateScore(tiles)
 
-        assertTrue(hasPattern(score, Pattern.BIG_THREE_DRAGONS))
-        assertFalse(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS)) // Superseded
-        assertTrue(score.totalPoints >= 11) // Basic (1) + Big Three Dragons (10)
+        assertThat(hasPattern(score, Pattern.BIG_THREE_DRAGONS)).isTrue()
+        assertThat(hasPattern(score, Pattern.LITTLE_THREE_DRAGONS)).isFalse() // Superseded
+        assertThat(score.totalPoints).isAtLeast(11) // Basic (1) + Big Three Dragons (10)
         // Also should have 3 dragon pungs stacking
-        assertEquals(3, score.items.count { it.pattern == Pattern.DRAGON_PUNG })
+        assertThat(score.items.count { it.pattern == Pattern.DRAGON_PUNG }).isEqualTo(3)
     }
 
     @Test
@@ -456,6 +518,6 @@ class ScoringEngineTest {
         val score = ScoringEngine.calculateScore(hand, WinContext.SELF_DRAW)
 
         // Basic (1) + Self Draw (1) + Concealed (1) + Big Three Dragons (10) + 3x Dragon Pung (3) = 16
-        assertTrue(score.totalPoints >= 16)
+        assertThat(score.totalPoints).isAtLeast(16)
     }
 }
