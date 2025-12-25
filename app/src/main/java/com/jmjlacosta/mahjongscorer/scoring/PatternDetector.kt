@@ -64,10 +64,10 @@ object PatternDetector {
             }
 
             // Dragon combinations
-            if (isBigThreeDragons(melds)) {
-                patterns.add(Pattern.BIG_THREE_DRAGONS)
-            } else if (isLittleThreeDragons(melds)) {
-                patterns.add(Pattern.LITTLE_THREE_DRAGONS)
+            when {
+                isBigThreeDragons(melds) -> patterns.add(Pattern.BIG_THREE_DRAGONS)
+                isLittleThreeDragons(melds) -> patterns.add(Pattern.LITTLE_THREE_DRAGONS)
+                else -> {} // No dragon combination
             }
         }
 

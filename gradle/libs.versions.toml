@@ -1,13 +1,14 @@
 [versions]
-kotlin = "1.9.22"
-agp = "8.2.2"
-compose-bom = "2024.02.00"
-compose-compiler = "1.5.8"
-core-ktx = "1.12.0"
-lifecycle = "2.7.0"
-activity-compose = "1.8.2"
-junit5 = "5.10.1"
-truth = "1.1.5"
+kotlin = "2.0.21"
+agp = "8.7.3"
+compose-bom = "2024.12.01"
+core-ktx = "1.15.0"
+lifecycle = "2.8.7"
+activity-compose = "1.9.3"
+junit5 = "5.11.3"
+truth = "1.4.4"
+navigation = "2.8.5"
+window = "1.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -23,7 +24,14 @@ junit5-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.
 junit5-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit5" }
 junit5-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junit5" }
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+window = { group = "androidx.window", name = "window", version.ref = "window" }
+compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive" }
+compose-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout" }
+compose-material3-adaptive-navigation = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation" }
+compose-material3-window-size = { group = "androidx.compose.material3", name = "material3-window-size-class" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

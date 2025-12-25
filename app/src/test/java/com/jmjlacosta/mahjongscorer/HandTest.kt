@@ -59,9 +59,9 @@ class HandTest {
 
     @Test
     fun `parse valid all pongs hand`() {
-        // 4 pongs + 1 pair: 111 222 333 444 55 (all dots)
-        val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
-                repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
+        // 4 pongs + 1 pair: 111 333 555 777 99 (all dots, non-consecutive to force pong interpretation)
+        val tiles = repeat(dots(1), 3) + repeat(dots(3), 3) +
+                repeat(dots(5), 3) + repeat(dots(7), 3) + repeat(dots(9), 2)
         val results = HandParser.parseHand(tiles)
 
         assertThat(results).isNotEmpty()

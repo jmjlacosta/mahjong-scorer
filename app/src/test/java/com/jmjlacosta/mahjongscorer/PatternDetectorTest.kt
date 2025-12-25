@@ -90,8 +90,8 @@ class PatternDetectorTest {
             Arguments.of(
                 repeat(bamboo(1), 3) + repeat(bamboo(2), 3) + repeat(bamboo(5), 3) +
                         repeat(dragon(Tile.Dragon.GREEN), 3) + repeat(bamboo(9), 2),
-                false,
-                "Pure bamboo - no half flush"
+                true,
+                "Bamboo with dragon - is half flush"
             ),
             Arguments.of(
                 repeat(dots(1), 3) + repeat(bamboo(2), 3) + repeat(chars(5), 3) +
@@ -505,8 +505,9 @@ class PatternDetectorTest {
 
     @Test
     fun `all pongs pure hand combination`() {
-        val tiles = repeat(dots(1), 3) + repeat(dots(2), 3) +
-                repeat(dots(3), 3) + repeat(dots(4), 3) + repeat(dots(5), 2)
+        // Use non-consecutive numbers to force pong interpretation
+        val tiles = repeat(dots(1), 3) + repeat(dots(3), 3) +
+                repeat(dots(5), 3) + repeat(dots(7), 3) + repeat(dots(9), 2)
         val hand = handWithMelds(tiles)
         val patterns = PatternDetector.detectPatterns(hand, WinContext.DEFAULT)
 
