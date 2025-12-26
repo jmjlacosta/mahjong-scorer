@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.jmjlacosta.mahjongscorer.ui.screens.CameraScreen
 import com.jmjlacosta.mahjongscorer.ui.screens.ResultScreen
 import com.jmjlacosta.mahjongscorer.ui.screens.TileInputScreen
 import com.jmjlacosta.mahjongscorer.viewmodel.ResultViewModel
@@ -16,8 +17,7 @@ import com.jmjlacosta.mahjongscorer.viewmodel.ResultViewModel
 sealed class Screen(val route: String) {
     data object TileInput : Screen("tile_input")
     data object Result : Screen("result")
-    // Future routes:
-    // data object Camera : Screen("camera")
+    data object Camera : Screen("camera")
 }
 
 /**
@@ -49,6 +49,19 @@ fun MahjongNavGraph(
                 score = resultViewModel.score,
                 winContext = resultViewModel.winContext,
                 onScanAnother = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(Screen.Camera.route) {
+            CameraScreen(
+                windowSizeClass = windowSizeClass,
+                onImageCaptured = { uri ->
+                    // TODO: Process captured image (future: ML tile detection)
+                    // For now, just go back
+                    navController.popBackStack()
+                },
+                onNavigateBack = {
                     navController.popBackStack()
                 }
             )
