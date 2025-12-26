@@ -116,11 +116,12 @@ fun HandBuilder(
 
 /**
  * A tile chip in the hand area.
+ * @param onClick Optional click handler. If null, the chip is non-interactive.
  */
 @Composable
 fun TileChip(
     tile: Tile,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val color = getTileColor(tile)
@@ -128,7 +129,7 @@ fun TileChip(
         modifier = modifier
             .size(40.dp)
             .clip(RoundedCornerShape(4.dp))
-            .clickable(onClick = onClick),
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         color = color.copy(alpha = 0.3f),
         shape = RoundedCornerShape(4.dp),
         tonalElevation = 4.dp
@@ -253,7 +254,7 @@ fun CalculateButton(
 /**
  * Get the color for a tile based on its suit/type.
  */
-private fun getTileColor(tile: Tile): Color = when (tile) {
+fun getTileColor(tile: Tile): Color = when (tile) {
     is Tile.NumberedTile -> when (tile.suit) {
         Suit.DOTS -> TileDots
         Suit.BAMBOO -> TileBamboo
